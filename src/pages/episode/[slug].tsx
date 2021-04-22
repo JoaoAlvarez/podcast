@@ -10,6 +10,8 @@ import Link from 'next/link';
 
 import styles from './episode.module.scss';
 
+import { useRouter } from 'next/router';
+
 interface Episode {
   id: string;
   title: string;
@@ -27,6 +29,13 @@ interface EpisodeProps{
 }
 
 export default function Episode( { episode } : EpisodeProps){
+
+  const router = useRouter();
+
+  if (router.isFallback){
+    return <p>Carregando...</p>
+  }
+
   return (
     <div className={styles.episode}>
       <div className={styles.thumbnailContainer}>
@@ -63,9 +72,28 @@ export default function Episode( { episode } : EpisodeProps){
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
+
+  const { data } = await api.get('episodes', {
+    params : {
+      _limit : 2,
+      _sort : 'published_at',
+      _order : 'desc'
+    }
+  });
+
+  const paths = data.map( episode => {
+    return {
+      params : {
+        slug : episode.id
+      }
+    }
+  })
+
   return {
-    paths : [],
-    fallback: 'blocking'
+    paths, //parametros de request que vao ficar pre-carregadas
+    fallback: 'blocking' // false : retorna 404 se nao tiver nada pre-carregada 
+    // true : carrega as rotas pelo lado do cliente 
+    //blocking : o cliente so vai ser enviado para a pagina qnd ela tiver carregada, ajuda no SEO
   }
 }
 
